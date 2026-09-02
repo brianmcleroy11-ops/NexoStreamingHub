@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:latest
+    container_name: nexostreaминghub-db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: nexostreaминghub
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - nexostreaминghub-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NexoStreamingHub Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexostreaминghub-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/nexostreaминghub?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-your_jwt_secret_key_here}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET}
+      TWITCH_REDIRECT_URI: http://localhost:5000/auth/twitch/callback
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET}
+      YOUTUBE_REDIRECT_URI: http://localhost:5000/auth/youtube/callback
+      TIKTOK_CLIENT_ID: ${TIKTOK_CLIENT_ID}
+      TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET}
+      TIKTOK_REDIRECT_URI: http://localhost:5000/auth/tiktok/callback
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - nexostreaминghub-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  # Redis Service (for caching and sessions)
+  redis:
+    image: redis:latest
+    container_name: nexostreaминghub-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - nexostreaминghub-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+
+networks:
+  nexostreaминghub-network:
+    driver: bridge

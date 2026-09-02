@@ -92,7 +92,7 @@ CONTAINER ID   IMAGE     STATUS
 ## 📍 Access Points
 
 | Service | URL | Credentials |
-|---------|-----|-------------|
+|---------|-----|----------|
 | **Backend API** | http://localhost:5000 | N/A |
 | **Health Check** | http://localhost:5000/api/health | N/A |
 | **MongoDB** | mongodb://localhost:27017 | admin / password123 |
